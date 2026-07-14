@@ -1,0 +1,2508 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click Masters: Multijuegos de Clic</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #07050f;
+            --bg-card: rgba(18, 14, 33, 0.75);
+            --primary: #9d4edd;
+            --primary-glow: rgba(157, 78, 221, 0.4);
+            --cyan: #00f5d4;
+            --cyan-glow: rgba(0, 245, 212, 0.4);
+            --pink: #f15bb5;
+            --pink-glow: rgba(241, 91, 181, 0.4);
+            --green: #39ff14;
+            --green-glow: rgba(57, 255, 20, 0.4);
+            --yellow: #ffd000;
+            --yellow-glow: rgba(255, 208, 0, 0.4);
+            --red: #ff0055;
+            --red-glow: rgba(255, 0, 85, 0.4);
+            --text-main: #f3f0ff;
+            --text-muted: #a29bfe;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: radial-gradient(circle at center, #171030 0%, var(--bg-dark) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Canvas de partículas detrás del contenido pero interactivo */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Contenedor Principal (Glassmorphism) */
+        .app-container {
+            width: 90%;
+            max-width: 950px;
+            min-height: 640px;
+            background: var(--bg-card);
+            border: 1px solid rgba(157, 78, 221, 0.25);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 
+                        inset 0 0 30px rgba(157, 78, 221, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* Cabecera del juego */
+        header {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(157, 78, 221, 0.15);
+            z-index: 3;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, var(--cyan), var(--primary), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(157, 78, 221, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            -webkit-text-fill-color: var(--cyan);
+            filter: drop-shadow(0 0 5px var(--cyan-glow));
+        }
+
+        .controls-top {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(157, 78, 221, 0.2);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(157, 78, 221, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+            transform: scale(1.05);
+        }
+
+        /* Pantallas del Juego */
+        .view-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            position: relative;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* VISTA: MENÚ PRINCIPAL */
+        #menu-view {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .menu-title {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .menu-title h1 {
+            font-family: var(--font-display);
+            font-size: 38px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(157, 78, 221, 0.35);
+        }
+
+        .menu-title p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-top: 5px;
+        }
+
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            width: 100%;
+            max-width: 880px;
+        }
+
+        @media (max-width: 768px) {
+            .modes-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 480px) {
+            .modes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 190px;
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mode-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Efecto Hover Colores */
+        .mode-card.card-semaforo:hover { border-color: var(--green); box-shadow: 0 6px 20px rgba(57, 255, 20, 0.15); transform: translateY(-3px); }
+        .mode-card.card-cps:hover { border-color: var(--primary); box-shadow: 0 6px 20px rgba(157, 78, 221, 0.15); transform: translateY(-3px); }
+        .mode-card.card-globos:hover { border-color: var(--pink); box-shadow: 0 6px 20px rgba(241, 91, 181, 0.15); transform: translateY(-3px); }
+        .mode-card.card-stroop:hover { border-color: var(--yellow); box-shadow: 0 6px 20px rgba(255, 208, 0, 0.15); transform: translateY(-3px); }
+        .mode-card.card-memoria:hover { border-color: var(--cyan); box-shadow: 0 6px 20px rgba(0, 245, 212, 0.15); transform: translateY(-3px); }
+        .mode-card.card-jardin:hover { border-color: #ff9f1c; box-shadow: 0 6px 20px rgba(255, 159, 28, 0.15); transform: translateY(-3px); }
+
+        .mode-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+        }
+
+        .card-semaforo .mode-icon { color: var(--green); }
+        .card-cps .mode-icon { color: var(--primary); }
+        .card-globos .mode-icon { color: var(--pink); }
+        .card-stroop .mode-icon { color: var(--yellow); }
+        .card-memoria .mode-icon { color: var(--cyan); }
+        .card-jardin .mode-icon { color: #ff9f1c; }
+
+        .mode-card:hover .mode-icon {
+            transform: scale(1.15);
+        }
+
+        .mode-card h3 {
+            font-family: var(--font-display);
+            font-size: 16px;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .mode-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.3;
+            margin-bottom: 10px;
+        }
+
+        .high-score-badge {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: auto;
+        }
+
+        .high-score-badge i {
+            color: #ffd700;
+        }
+
+        /* ELEMENTOS GENERALES DEL PANEL DE JUEGO */
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px 15px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .back-link {
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--cyan);
+        }
+
+        .game-stats-panel {
+            display: flex;
+            gap: 15px;
+            font-family: var(--font-display);
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 5px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-item .val {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* 1. MODO: SEMÁFORO 🚦 */
+        .semaforo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .traffic-light {
+            background: #151224;
+            border: 4px solid #2a2447;
+            border-radius: 30px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 110px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 
+                        0 0 0 1px rgba(255,255,255,0.05);
+        }
+
+        .light-bulb {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #201b33;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.8);
+            transition: background 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+
+        .light-bulb::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 15px;
+            width: 40px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50% 50% 10% 10%;
+        }
+
+        /* Estados de Luces */
+        .light-bulb.red-on {
+            background: #ff0055;
+            box-shadow: 0 0 35px var(--red-glow), inset 0 -4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .light-bulb.yellow-on {
+            background: #ffae00;
+            box-shadow: 0 0 35px var(--yellow-glow), inset 0 -4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .light-bulb.green-on {
+            background: #00ff66;
+            box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 -4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .semaforo-click-area {
+            width: 100%;
+            height: 240px;
+            border-radius: 20px;
+            border: 2px dashed rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.01);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .semaforo-click-area:active {
+            transform: scale(0.99);
+        }
+
+        .semaforo-click-area.bg-red {
+            border-color: var(--red);
+            background: rgba(255, 0, 85, 0.03);
+        }
+
+        .semaforo-click-area.bg-green {
+            border-color: var(--green);
+            background: rgba(57, 255, 20, 0.05);
+            box-shadow: inset 0 0 25px rgba(57, 255, 20, 0.04);
+        }
+
+        #semaforo-msg {
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        #semaforo-subtext {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* 3. MODO: REVIENTA GLOBOS 🎈 */
+        #globos-board {
+            width: 100%;
+            height: 420px;
+            border-radius: 20px;
+            background: radial-gradient(circle at bottom, #110d24 0%, #080612 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .balloon {
+            position: absolute;
+            width: 50px;
+            height: 62px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+            animation: swayBalloon 2.5s ease-in-out infinite alternate;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 6px solid currentColor;
+        }
+
+        .balloon-string {
+            position: absolute;
+            bottom: -32px;
+            width: 1px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        @keyframes swayBalloon {
+            0% { margin-left: -5px; }
+            100% { margin-left: 5px; }
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 6px;
+            color: var(--red);
+            font-size: 16px;
+        }
+
+        .lives-container i.lost {
+            color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 4. MODO: ELIGE EL COLOR (ATENCIÓN) 🟥 */
+        .stroop-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .stroop-prompt-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .stroop-instruction {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .stroop-word {
+            font-family: var(--font-display);
+            font-size: 46px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .stroop-options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .stroop-btn {
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .stroop-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stroop-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* 5. MODO: MEMORIA (SIMON SAYS) 🧠 */
+        .memoria-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .simon-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 280px;
+            height: 280px;
+        }
+
+        .simon-pad {
+            border-radius: 18px;
+            cursor: pointer;
+            opacity: 0.35;
+            transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .simon-pad::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+        }
+
+        .simon-pad:active {
+            transform: scale(0.94);
+        }
+
+        .pad-red {
+            background: #ff0055;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
+        }
+        .pad-blue {
+            background: #00a2ff;
+            box-shadow: 0 0 10px rgba(0, 162, 255, 0.2);
+        }
+        .pad-green {
+            background: #00ff66;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+        .pad-yellow {
+            background: #ffd000;
+            box-shadow: 0 0 10px rgba(255, 208, 0, 0.2);
+        }
+
+        /* Iluminados */
+        .simon-pad.active {
+            opacity: 1 !important;
+            transform: scale(1.02);
+        }
+        .pad-red.active { box-shadow: 0 0 35px #ff0055; }
+        .pad-blue.active { box-shadow: 0 0 35px #00a2ff; }
+        .pad-green.active { box-shadow: 0 0 35px #00ff66; }
+        .pad-yellow.active { box-shadow: 0 0 35px #ffd000; }
+
+        .simon-info {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* 6. MODO: JARDÍN RELAJANTE 🌸 */
+        .jardin-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .jardin-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .jardin-plot {
+            background: rgba(16, 12, 31, 0.5);
+            border: 2px solid rgba(157, 78, 221, 0.15);
+            border-radius: 18px;
+            height: 130px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .jardin-plot:hover {
+            border-color: #ff9f1c;
+            background: rgba(16, 12, 31, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .plot-graphic {
+            font-size: 42px;
+            filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.3));
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .jardin-plot:active .plot-graphic {
+            transform: scale(0.85);
+        }
+
+        .plot-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        /* Mariposa Animada */
+        .butterfly {
+            position: absolute;
+            font-size: 20px;
+            pointer-events: none;
+            z-index: 10;
+            animation: flyButterfly 3s ease-out forwards;
+        }
+
+        @keyframes flyButterfly {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(0.8);
+                opacity: 1;
+            }
+            33% {
+                transform: translate(var(--sway-1), -80px) rotate(15deg) scale(0.9);
+            }
+            66% {
+                transform: translate(var(--sway-2), -180px) rotate(-15deg) scale(1);
+            }
+            100% {
+                transform: translate(var(--sway-3), -300px) rotate(5deg) scale(0.6);
+                opacity: 0;
+            }
+        }
+
+        /* Gota de agua cayendo */
+        .water-drop {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #00d2ff;
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(45deg);
+            pointer-events: none;
+            animation: fallDrop 0.4s ease-in forwards;
+        }
+
+        @keyframes fallDrop {
+            0% { transform: translateY(-30px) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(0) rotate(45deg); opacity: 0; }
+        }
+
+        /* PANTALLA DE RESULTADOS */
+        #results-view {
+            animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+        }
+
+        .results-header h2 {
+            font-family: var(--font-display);
+            font-size: 32px;
+            color: var(--cyan);
+            text-shadow: 0 0 10px var(--cyan-glow);
+            text-transform: uppercase;
+        }
+
+        .results-header p {
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .result-card .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .result-card .val {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .result-badge-container {
+            margin-bottom: 25px;
+            padding: 12px 22px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(157, 78, 221, 0.1), rgba(241, 91, 181, 0.1));
+            border: 1px solid rgba(241, 91, 181, 0.2);
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .result-badge-container .badge-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .result-badge-container .badge-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--pink);
+            text-shadow: 0 0 10px var(--pink-glow);
+        }
+
+        .btn-action-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--pink));
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(241, 91, 181, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(241, 91, 181, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.03);
+        }
+
+        /* TEXTO FLOTANTE ANIMADO */
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--cyan);
+            text-shadow: 0 0 5px var(--cyan-glow), 0 0 10px black;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 10;
+        }
+
+        /* Overlay Cuenta Regresiva */
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 5, 15, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .countdown-number {
+            font-family: var(--font-display);
+            font-size: 80px;
+            font-weight: 800;
+            color: var(--cyan);
+            text-shadow: 0 0 20px var(--cyan-glow);
+            animation: pulseCount 1s infinite;
+        }
+
+        /* ANIMACIONES */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(0.85);
+            }
+        }
+
+        @keyframes pulseCount {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Lienzo de partículas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="app-container">
+        <!-- Encabezado superior -->
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-bolt"></i> CLICK MASTERS
+            </div>
+            <div class="controls-top">
+                <button class="btn-icon" id="soundBtn" title="Activar/Silenciar Sonidos">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 1. VISTA: MENÚ PRINCIPAL -->
+        <div id="menu-view" class="view-panel">
+            <div class="menu-title">
+                <h1>Suite Multijuegos</h1>
+                <p>Ejercita tus reflejos, coordinación, atención y relájate.</p>
+            </div>
+
+            <div class="modes-grid">
+                <!-- Tarjeta Semáforo -->
+                <div class="mode-card card-semaforo" onclick="selectMode('semaforo')">
+                    <div class="mode-icon"><i class="fa-solid fa-traffic-light"></i></div>
+                    <h3>🚦 Semáforo</h3>
+                    <p>Haz clic únicamente cuando la luz se ponga verde. ¡Mide tus reflejos!</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-trophy"></i> Récord: <span id="record-semaforo">--</span> ms
+                    </div>
+                </div>
+
+                <!-- Tarjeta CPS (Clics Rápidos) -->
+                <div class="mode-card card-cps" onclick="selectMode('cps')">
+                    <div class="mode-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                    <h3>⚡ Clics Rápidos</h3>
+                    <p>Prueba CPS. Haz la mayor cantidad de clics posibles en 10 segundos.</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-trophy"></i> Récord: <span id="record-cps">0</span> CPS
+                    </div>
+                </div>
+
+                <!-- Tarjeta Revienta Globos -->
+                <div class="mode-card card-globos" onclick="selectMode('globos')">
+                    <div class="mode-icon"><i class="fa-solid fa-circle-dot"></i></div>
+                    <h3>🎈 Revienta Globos</h3>
+                    <p>Globos flotantes a toda velocidad. Coordina y explótalos antes de escapar.</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-trophy"></i> Récord: <span id="record-globos">0</span> pts
+                    </div>
+                </div>
+
+                <!-- Tarjeta Stroop (Elige el color) -->
+                <div class="mode-card card-stroop" onclick="selectMode('stroop')">
+                    <div class="mode-icon"><i class="fa-solid fa-palette"></i></div>
+                    <h3>🟥 Elige el Color</h3>
+                    <p>Enfoque visual. Haz clic en el color físico de la letra, no en lo que dice.</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-trophy"></i> Récord: <span id="record-stroop">0</span> pts
+                    </div>
+                </div>
+
+                <!-- Tarjeta Memoria -->
+                <div class="mode-card card-memoria" onclick="selectMode('memoria')">
+                    <div class="mode-icon"><i class="fa-solid fa-brain"></i></div>
+                    <h3>🧠 Memoria</h3>
+                    <p>Sigue la secuencia de luces y sonidos Simon. Memoriza y haz clics.</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-trophy"></i> Récord: <span id="record-memoria">0</span> niv
+                    </div>
+                </div>
+
+                <!-- Tarjeta Jardín -->
+                <div class="mode-card card-jardin" onclick="selectMode('jardin')">
+                    <div class="mode-icon"><i class="fa-solid fa-seedling"></i></div>
+                    <h3>🌸 Jardín Zen</h3>
+                    <p>Modo de relajación. Siembra, riega y florece plantas con tonos musicales.</p>
+                    <div class="high-score-badge">
+                        <i class="fa-solid fa-sun"></i> Zen Mode
+                    </div>
+                </div>
+            </div>
+            <div class="menu-credits" style="margin-top: 25px; font-size: 13px; color: var(--text-muted); opacity: 0.8; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-code" style="color: var(--cyan);"></i> Hecho por: Roberto Jumbo Herrera, Nathaly Torres
+            </div>
+        </div>
+
+        <!-- 2. VISTA: JUEGO SEMÁFORO 🚦 -->
+        <div id="semaforo-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div class="game-stats-panel">
+                    <div class="stat-item">Aciertos: <span class="val" id="semaforo-score">0</span></div>
+                    <div class="stat-item">Último: <span class="val" id="semaforo-time">--</span> ms</div>
+                </div>
+            </div>
+
+            <div class="semaforo-container">
+                <div class="traffic-light">
+                    <div class="light-bulb" id="light-red"></div>
+                    <div class="light-bulb" id="light-yellow"></div>
+                    <div class="light-bulb" id="light-green"></div>
+                </div>
+
+                <div id="semaforo-click-area" class="semaforo-click-area">
+                    <div id="semaforo-msg">HAZ CLIC PARA COMENZAR</div>
+                    <div id="semaforo-subtext">Espera a que el semáforo cambie a verde</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. VISTA: JUEGO CPS ⚡ -->
+        <div id="cps-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div class="game-stats-panel">
+                    <div class="stat-item">Tiempo: <span class="val" id="cps-timer">10.0</span>s</div>
+                    <div class="stat-item">Clics: <span class="val" id="cps-score">0</span></div>
+                </div>
+            </div>
+
+            <div class="cps-wrapper">
+                <div class="cps-current-cps">CPS Actual: <span id="cps-live-value">0.0</span></div>
+                
+                <button class="cps-btn" id="cps-click-btn">
+                    ¡CLIC!
+                    <span>RÁPIDO</span>
+                </button>
+
+                <div class="cps-progress-container">
+                    <div class="cps-progress-bar" id="cps-progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. VISTA: JUEGO GLOBOS 🎈 -->
+        <div id="globos-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div class="lives-container" id="globos-lives">
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+                <div class="game-stats-panel">
+                    <div class="stat-item">Globos: <span class="val" id="globos-score">0</span></div>
+                </div>
+            </div>
+
+            <div id="globos-board">
+                <!-- Globos se insertan aquí -->
+            </div>
+        </div>
+
+        <!-- 5. VISTA: ELIGE EL COLOR 🟥 -->
+        <div id="stroop-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div class="game-stats-panel">
+                    <div class="stat-item">Tiempo: <span class="val" id="stroop-timer">15.0</span>s</div>
+                    <div class="stat-item">Puntos: <span class="val" id="stroop-score">0</span></div>
+                </div>
+            </div>
+
+            <div class="stroop-container">
+                <div class="stroop-prompt-box">
+                    <div class="stroop-instruction">Haz clic en el color de las letras:</div>
+                    <div class="stroop-word" id="stroop-word-display">VERDE</div>
+                </div>
+
+                <div class="stroop-options-grid" id="stroop-options-grid">
+                    <!-- Botones de colores se insertan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. VISTA: JUEGO MEMORIA 🧠 -->
+        <div id="memoria-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div class="game-stats-panel">
+                    <div class="stat-item">Nivel: <span class="val" id="memoria-level">1</span></div>
+                </div>
+            </div>
+
+            <div class="memoria-container">
+                <div class="simon-info" id="simon-status">¡PRESTA ATENCIÓN!</div>
+                <div class="simon-grid">
+                    <div class="simon-pad pad-red" data-index="0" id="simon-pad-0"></div>
+                    <div class="simon-pad pad-blue" data-index="1" id="simon-pad-1"></div>
+                    <div class="simon-pad pad-green" data-index="2" id="simon-pad-2"></div>
+                    <div class="simon-pad pad-yellow" data-index="3" id="simon-pad-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. VISTA: JARDÍN RELAJANTE 🌸 -->
+        <div id="jardin-view" class="view-panel hidden">
+            <div class="game-header">
+                <div class="back-link" onclick="goToMenu()"><i class="fa-solid fa-chevron-left"></i> Menú</div>
+                <div>
+                    <button class="btn-secondary" onclick="resetJardin()" style="padding: 6px 15px; font-size: 13px;">
+                        <i class="fa-solid fa-trash-can"></i> Limpiar Jardín
+                    </button>
+                </div>
+            </div>
+
+            <div class="jardin-container">
+                <div style="font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 5px;">
+                    ¡Haz clic en la tierra para plantar y hacer crecer hermosas flores a tu propio ritmo!
+                </div>
+                <div class="jardin-grid" id="jardin-grid">
+                    <!-- 6 Parcelas de tierra se crean dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. VISTA: RESULTADOS -->
+        <div id="results-view" class="view-panel hidden">
+            <div class="results-header">
+                <h2 id="result-title">Partida Terminada</h2>
+                <p id="result-desc">Estadísticas de tu desempeño.</p>
+            </div>
+
+            <div class="results-grid" id="results-stats-container">
+                <!-- Estadísticas variables -->
+            </div>
+
+            <div class="result-badge-container">
+                <span class="badge-label">Rango Otorgado</span>
+                <span class="badge-title" id="result-badge">CALCULANDO...</span>
+            </div>
+
+            <div class="btn-action-group">
+                <button class="btn-primary" onclick="restartCurrentMode()"><i class="fa-solid fa-rotate-left"></i> Jugar Otra Vez</button>
+                <button class="btn-secondary" onclick="goToMenu()"><i class="fa-solid fa-house"></i> Menú Principal</button>
+            </div>
+        </div>
+
+        <!-- Cuenta Regresiva Overlay -->
+        <div id="countdown-view" class="countdown-overlay hidden">
+            <div class="countdown-number" id="countdown-text">3</div>
+        </div>
+    </div>
+
+    <!-- Script de Lógica -->
+    <script>
+        // --- SONIDOS SINTÉTICOS NATIVOS (Web Audio API) ---
+        let soundEnabled = true;
+        const Sound = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.08) {
+                if (!soundEnabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playClick() {
+                this.playTone(800, 'sine', 0.1, 0.08);
+            },
+            playSuccess() {
+                this.playTone(523.25, 'sine', 0.12, 0.08); // C5
+                setTimeout(() => this.playTone(659.25, 'sine', 0.12, 0.08), 80); // E5
+                setTimeout(() => this.playTone(783.99, 'sine', 0.2, 0.08), 160); // G5
+            },
+            playMiss() {
+                this.playTone(180, 'sawtooth', 0.25, 0.12);
+            },
+            playCountdown() {
+                this.playTone(580, 'sine', 0.08, 0.05);
+            },
+            playStart() {
+                this.playTone(880, 'sine', 0.25, 0.1);
+            },
+            playLaser() {
+                // Sonido láser de tono descendente
+                if (!soundEnabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            },
+            playPop() {
+                this.playTone(600, 'triangle', 0.08, 0.15);
+            },
+            // Tonos pentatónicos armónicos para el jardín
+            playHarp(index) {
+                const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // C4, D4, E4, G4, A4, C5
+                const freq = pentatonic[index % pentatonic.length];
+                this.playTone(freq, 'sine', 0.5, 0.1);
+            }
+        };
+
+        // --- SISTEMA DE PARTÍCULAS CANVAS ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 4 + 2;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 1.5;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed - 1.2;
+                this.color = color;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.015;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.08; // gravedad
+                this.alpha -= this.decay;
+            }
+        }
+
+        function createExplosion(x, y, color = 'var(--cyan)') {
+            let actualColor = color;
+            if (color.startsWith('var')) {
+                const varName = color.replace('var(', '').replace(')', '');
+                actualColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+            }
+            
+            for (let i = 0; i < 15; i++) {
+                particles.push(new Particle(x, y, actualColor));
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles = particles.filter(p => p.alpha > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Registrar clicks en pantalla para explosiones globales
+        window.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('button') || e.target.closest('.mode-card') || e.target.closest('.jardin-plot') || e.target.closest('.simon-pad')) return;
+            const colors = ['var(--cyan)', 'var(--pink)', 'var(--primary)', 'var(--green)', 'var(--yellow)'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            createExplosion(e.clientX, e.clientY, randomColor);
+        });
+
+        // --- SISTEMA GENERAL DE NAVEGACIÓN ---
+        let currentMode = '';
+        const views = {
+            menu: document.getElementById('menu-view'),
+            semaforo: document.getElementById('semaforo-view'),
+            cps: document.getElementById('cps-view'),
+            globos: document.getElementById('globos-view'),
+            stroop: document.getElementById('stroop-view'),
+            memoria: document.getElementById('memoria-view'),
+            jardin: document.getElementById('jardin-view'),
+            results: document.getElementById('results-view'),
+            countdown: document.getElementById('countdown-view')
+        };
+
+        function showView(viewName) {
+            Object.keys(views).forEach(k => {
+                if (k === viewName) {
+                    views[k].classList.remove('hidden');
+                } else {
+                    views[k].classList.add('hidden');
+                }
+            });
+        }
+
+        function goToMenu() {
+            stopSemaforoGame();
+            stopCPSGame();
+            stopGlobosGame();
+            stopStroopGame();
+            stopMemoriaGame();
+            
+            updateRecordsDisplay();
+            showView('menu');
+            currentMode = '';
+        }
+
+        // --- REGISTRO DE RÉCORDS (LocalStorage) ---
+        const records = {
+            semaforo: localStorage.getItem('record_semaforo') ? parseInt(localStorage.getItem('record_semaforo')) : null,
+            cps: localStorage.getItem('record_cps') ? parseFloat(localStorage.getItem('record_cps')) : 0.0,
+            globos: localStorage.getItem('record_globos') ? parseInt(localStorage.getItem('record_globos')) : 0,
+            stroop: localStorage.getItem('record_stroop') ? parseInt(localStorage.getItem('record_stroop')) : 0,
+            memoria: localStorage.getItem('record_memoria') ? parseInt(localStorage.getItem('record_memoria')) : 0
+        };
+
+        function updateRecordsDisplay() {
+            document.getElementById('record-semaforo').textContent = records.semaforo ? records.semaforo : '--';
+            document.getElementById('record-cps').textContent = records.cps.toFixed(1);
+            document.getElementById('record-globos').textContent = records.globos;
+            document.getElementById('record-stroop').textContent = records.stroop;
+            document.getElementById('record-memoria').textContent = records.memoria;
+        }
+        updateRecordsDisplay();
+
+        function checkRecord(mode, value) {
+            if (mode === 'semaforo') {
+                if (records.semaforo === null || value < records.semaforo) {
+                    records.semaforo = value;
+                    localStorage.setItem('record_semaforo', value);
+                    return true;
+                }
+            } else if (mode === 'cps') {
+                if (value > records.cps) {
+                    records.cps = value;
+                    localStorage.setItem('record_cps', value);
+                    return true;
+                }
+            } else if (mode === 'globos') {
+                if (value > records.globos) {
+                    records.globos = value;
+                    localStorage.setItem('record_globos', value);
+                    return true;
+                }
+            } else if (mode === 'stroop') {
+                if (value > records.stroop) {
+                    records.stroop = value;
+                    localStorage.setItem('record_stroop', value);
+                    return true;
+                }
+            } else if (mode === 'memoria') {
+                if (value > records.memoria) {
+                    records.memoria = value;
+                    localStorage.setItem('record_memoria', value);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Cuenta regresiva antes de empezar
+        function startCountdown(onComplete) {
+            showView('countdown');
+            let count = 3;
+            const countText = document.getElementById('countdown-text');
+            countText.textContent = count;
+            Sound.playCountdown();
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countText.textContent = count;
+                    Sound.playCountdown();
+                } else {
+                    clearInterval(interval);
+                    Sound.playStart();
+                    onComplete();
+                }
+            }, 850);
+        }
+
+        function selectMode(mode) {
+            currentMode = mode;
+            Sound.init();
+            
+            if (mode === 'semaforo') {
+                showView('semaforo');
+                initSemaforoGame();
+            } else if (mode === 'cps') {
+                showView('cps');
+                initCPSGame();
+            } else if (mode === 'globos') {
+                startCountdown(() => {
+                    showView('globos');
+                    startGlobosGame();
+                });
+            } else if (mode === 'stroop') {
+                startCountdown(() => {
+                    showView('stroop');
+                    startStroopGame();
+                });
+            } else if (mode === 'memoria') {
+                startCountdown(() => {
+                    showView('memoria');
+                    startMemoriaGame();
+                });
+            } else if (mode === 'jardin') {
+                showView('jardin');
+                initJardinGame();
+            }
+        }
+
+        function restartCurrentMode() {
+            if (currentMode) {
+                selectMode(currentMode);
+            } else {
+                goToMenu();
+            }
+        }
+
+        // Crear flotantes "+10" u "Oops!"
+        function spawnFloatingText(parent, text, x, y, color = 'var(--cyan)') {
+            const span = document.createElement('span');
+            span.className = 'floating-text';
+            span.textContent = text;
+            span.style.left = `${x}px`;
+            span.style.top = `${y}px`;
+            if (color) {
+                span.style.color = color;
+                span.style.textShadow = `0 0 5px ${color}, 0 0 10px black`;
+            }
+            parent.appendChild(span);
+            setTimeout(() => span.remove(), 800);
+        }
+
+        // Activar/Desactivar sonido
+        const soundBtn = document.getElementById('soundBtn');
+        soundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) {
+                soundBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                Sound.init();
+                Sound.playClick();
+            } else {
+                soundBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+            }
+        });
+
+
+        // ==========================================
+        // 1. LÓGICA: 🚦 SEMÁFORO
+        // ==========================================
+        let semaforoTimer;
+        let semaforoStartTime;
+        let semaforoScore = 0;
+        let semaforoRounds = 0;
+        let semaforoTimesSum = 0;
+        let semaforoState = 'idle'; // idle, wait_red, wait_yellow, green, feedback
+        const semaforoArea = document.getElementById('semaforo-click-area');
+        const semaforoMsg = document.getElementById('semaforo-msg');
+        const semaforoSub = document.getElementById('semaforo-subtext');
+        const semaforoScoreDisplay = document.getElementById('semaforo-score');
+        const semaforoTimeDisplay = document.getElementById('semaforo-time');
+        
+        const lightRed = document.getElementById('light-red');
+        const lightYellow = document.getElementById('light-yellow');
+        const lightGreen = document.getElementById('light-green');
+
+        function initSemaforoGame() {
+            semaforoScore = 0;
+            semaforoRounds = 0;
+            semaforoTimesSum = 0;
+            semaforoState = 'idle';
+            
+            semaforoScoreDisplay.textContent = '0';
+            semaforoTimeDisplay.textContent = '--';
+            
+            setSemaforoLights(false, false, false);
+            setSemaforoAreaState('wait', '¡CLIC AQUÍ PARA COMENZAR!', 'Presiona para iniciar el ciclo del semáforo.');
+        }
+
+        function stopSemaforoGame() {
+            clearTimeout(semaforoTimer);
+            semaforoState = 'idle';
+        }
+
+        function setSemaforoLights(red, yellow, green) {
+            lightRed.className = 'light-bulb' + (red ? ' red-on' : '');
+            lightYellow.className = 'light-bulb' + (yellow ? ' yellow-on' : '');
+            lightGreen.className = 'light-bulb' + (green ? ' green-on' : '');
+        }
+
+        function setSemaforoAreaState(stateClass, message, subtext) {
+            semaforoArea.className = 'semaforo-click-area';
+            if (stateClass) semaforoArea.classList.add(stateClass);
+            semaforoMsg.textContent = message;
+            semaforoSub.textContent = subtext;
+        }
+
+        semaforoArea.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            
+            if (semaforoState === 'idle') {
+                startSemaforoRound();
+            } else if (semaforoState === 'wait_red' || semaforoState === 'wait_yellow') {
+                handleSemaforoEarlyClick(e);
+            } else if (semaforoState === 'green') {
+                handleSemaforoSuccessClick(e);
+            }
+        });
+
+        function startSemaforoRound() {
+            semaforoState = 'wait_red';
+            setSemaforoLights(true, false, false);
+            setSemaforoAreaState('bg-red', '🚦 ESPERA A ROJO', 'No presiones todavía...');
+
+            // Esperar de 1.5 a 3.5 segundos en rojo
+            const delayYellow = Math.random() * 2000 + 1500;
+            
+            clearTimeout(semaforoTimer);
+            semaforoTimer = setTimeout(() => {
+                triggerSemaforoYellow();
+            }, delayYellow);
+        }
+
+        function triggerSemaforoYellow() {
+            semaforoState = 'wait_yellow';
+            setSemaforoLights(false, true, false);
+            setSemaforoAreaState('bg-red', '🚦 ¡PREPÁRATE!', '¡Casi listo...!');
+            Sound.playCountdown();
+
+            // Esperar de 0.8 a 1.6 segundos en amarillo
+            const delayGreen = Math.random() * 800 + 800;
+
+            semaforoTimer = setTimeout(() => {
+                triggerSemaforoGreen();
+            }, delayGreen);
+        }
+
+        function triggerSemaforoGreen() {
+            semaforoState = 'green';
+            setSemaforoLights(false, false, true);
+            setSemaforoAreaState('bg-green', '🟢 ¡YA! 🟢', '¡PRESIONA AHORA!');
+            semaforoStartTime = performance.now();
+            Sound.playStart();
+        }
+
+        function handleSemaforoSuccessClick(e) {
+            const reactionTime = Math.round(performance.now() - semaforoStartTime);
+            semaforoState = 'feedback';
+            semaforoRounds++;
+            semaforoTimesSum += reactionTime;
+            semaforoScore++;
+
+            semaforoScoreDisplay.textContent = semaforoScore;
+            semaforoTimeDisplay.textContent = reactionTime;
+
+            const rect = semaforoArea.getBoundingClientRect();
+            createExplosion(e.clientX, e.clientY, 'var(--green)');
+            spawnFloatingText(semaforoArea, `${reactionTime}ms`, e.clientX - rect.left, e.clientY - rect.top, 'var(--green)');
+
+            setSemaforoAreaState('bg-green', '¡BUEN CLIC!', `Tiempo de reacción: ${reactionTime} ms`);
+            Sound.playSuccess();
+
+            // Termina tras 5 rondas exitosas
+            if (semaforoRounds >= 5) {
+                setTimeout(finishSemaforoGame, 1200);
+            } else {
+                setTimeout(startSemaforoRound, 1400);
+            }
+        }
+
+        function handleSemaforoEarlyClick(e) {
+            clearTimeout(semaforoTimer);
+            semaforoState = 'feedback';
+            setSemaforoLights(false, false, false);
+            Sound.playMiss();
+
+            const rect = semaforoArea.getBoundingClientRect();
+            spawnFloatingText(semaforoArea, '¡Muy Pronto!', e.clientX - rect.left, e.clientY - rect.top, 'var(--red)');
+            setSemaforoAreaState('bg-red', '¡SALIDA EN FALSO!', 'Presionaste antes del verde. Reintentando...');
+
+            setTimeout(startSemaforoRound, 1500);
+        }
+
+        function finishSemaforoGame() {
+            stopSemaforoGame();
+            const avgTime = Math.round(semaforoTimesSum / 5);
+            const isNewRecord = checkRecord('semaforo', avgTime);
+
+            let rank = '';
+            if (avgTime < 190) rank = 'Reflejos Supersónicos';
+            else if (avgTime < 240) rank = 'Conductor de F1';
+            else if (avgTime < 290) rank = 'Humano Promedio';
+            else rank = 'Reflejos Relajados';
+
+            document.getElementById('result-title').textContent = isNewRecord ? '¡NUEVO RÉCORD DE SEMÁFORO!' : 'Rondas Completadas';
+            document.getElementById('result-desc').textContent = 'Se han medido tus tiempos de reacción en el semáforo.';
+            document.getElementById('result-badge').textContent = rank;
+
+            const statsContainer = document.getElementById('results-stats-container');
+            statsContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="label">Reacción Promedio</div>
+                    <div class="val" style="color: var(--green)">${avgTime} ms</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Rondas Jugadas</div>
+                    <div class="val">5 / 5</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Puntaje</div>
+                    <div class="val">${semaforoScore}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Récord de Semáforo</div>
+                    <div class="val">${records.semaforo ? records.semaforo + ' ms' : '--'}</div>
+                </div>
+            `;
+
+            showView('results');
+        }
+
+
+        // ==========================================
+        // 2. LÓGICA: ⚡ CLICS RÁPIDOS
+        // ==========================================
+        let cpsTimerInterval;
+        let cpsTimeLeft = 10.0;
+        let cpsClicks = 0;
+        let cpsActive = false;
+        let cpsClickTimestamps = [];
+        const cpsBtn = document.getElementById('cps-click-btn');
+        const cpsTimerVal = document.getElementById('cps-timer');
+        const cpsScoreVal = document.getElementById('cps-score');
+        const cpsProgressBar = document.getElementById('cps-progress');
+        const cpsLiveVal = document.getElementById('cps-live-value');
+
+        function initCPSGame() {
+            cpsClicks = 0;
+            cpsTimeLeft = 10.0;
+            cpsActive = false;
+            cpsClickTimestamps = [];
+            
+            cpsTimerVal.textContent = '10.0';
+            cpsScoreVal.textContent = '0';
+            cpsLiveVal.textContent = '0.0';
+            cpsProgressBar.style.width = '100%';
+            
+            cpsBtn.querySelector('span').textContent = 'PARA EMPEZAR';
+        }
+
+        function stopCPSGame() {
+            clearInterval(cpsTimerInterval);
+            cpsActive = false;
+        }
+
+        cpsBtn.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+
+            if (!cpsActive && cpsTimeLeft === 10.0) {
+                cpsActive = true;
+                cpsBtn.querySelector('span').textContent = '¡DALE!';
+                startCPSLoop();
+            }
+
+            if (cpsActive) {
+                cpsClicks++;
+                cpsScoreVal.textContent = cpsClicks;
+                Sound.playLaser();
+
+                const now = performance.now();
+                cpsClickTimestamps.push(now);
+
+                const rect = cpsBtn.getBoundingClientRect();
+                const floatX = e.clientX - rect.left;
+                const floatY = e.clientY - rect.top;
+                spawnFloatingText(cpsBtn, `+1`, floatX, floatY, 'var(--primary)');
+                createExplosion(e.clientX, e.clientY, 'var(--primary)');
+                
+                calculateLiveCPS(now);
+            }
+        });
+
+        function startCPSLoop() {
+            const tickRate = 50;
+            const startTime = performance.now();
+
+            cpsTimerInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                cpsTimeLeft = Math.max(0, 10.0 - elapsed);
+                
+                cpsTimerVal.textContent = cpsTimeLeft.toFixed(1);
+                
+                const percent = (cpsTimeLeft / 10.0) * 100;
+                cpsProgressBar.style.width = `${percent}%`;
+
+                calculateLiveCPS(performance.now());
+
+                if (cpsTimeLeft <= 0) {
+                    finishCPSGame();
+                }
+            }, tickRate);
+        }
+
+        function calculateLiveCPS(now) {
+            cpsClickTimestamps = cpsClickTimestamps.filter(t => now - t < 1000);
+            let liveCPS = cpsClickTimestamps.length;
+            cpsLiveVal.textContent = liveCPS.toFixed(1);
+        }
+
+        function finishCPSGame() {
+            stopCPSGame();
+            const finalCPS = parseFloat((cpsClicks / 10.0).toFixed(2));
+            const isNewRecord = checkRecord('cps', finalCPS);
+
+            let rank = '';
+            if (finalCPS >= 10.0) rank = 'Dedo de Rayo (Modo Bot)';
+            else if (finalCPS >= 7.5) rank = 'Clicker Profesional';
+            else if (finalCPS >= 5.0) rank = 'Velocidad Estándar';
+            else rank = 'Pulsador Relajado';
+
+            document.getElementById('result-title').textContent = isNewRecord ? '¡NUEVO RÉCORD DE VELOCIDAD CPS!' : 'CPS Completado';
+            document.getElementById('result-desc').textContent = 'Tu velocidad de clics por segundo ha sido medida.';
+            document.getElementById('result-badge').textContent = rank;
+
+            const statsContainer = document.getElementById('results-stats-container');
+            statsContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="label">CPS Promedio</div>
+                    <div class="val" style="color: var(--primary)">${finalCPS} CPS</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Total de Clics</div>
+                    <div class="val">${cpsClicks}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Tiempo de Prueba</div>
+                    <div class="val">10.0 s</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Récord Actual</div>
+                    <div class="val">${records.cps.toFixed(1)} CPS</div>
+                </div>
+            `;
+
+            showView('results');
+        }
+
+
+        // ==========================================
+        // 3. LÓGICA: 🎈 REVIENTA GLOBOS
+        // ==========================================
+        let globosTimer;
+        let globosScore = 0;
+        let globosLives = 3;
+        let balloonCounter = 0;
+        let activeBalloons = [];
+        let globosGameActive = false;
+        
+        const globosBoard = document.getElementById('globos-board');
+        const globosScoreDisplay = document.getElementById('globos-score');
+        const globosLivesDisplay = document.getElementById('globos-lives');
+
+        function startGlobosGame() {
+            globosScore = 0;
+            globosLives = 3;
+            balloonCounter = 0;
+            activeBalloons = [];
+            globosGameActive = true;
+            globosBoard.innerHTML = '';
+            globosScoreDisplay.textContent = '0';
+            
+            updateGlobosLives();
+            
+            // Iniciar ciclo de generación de globos
+            spawnBalloonLoop();
+            
+            // Iniciar ciclo de animación física
+            animateBalloons();
+        }
+
+        function stopGlobosGame() {
+            globosGameActive = false;
+            clearTimeout(globosTimer);
+            activeBalloons.forEach(b => b.element.remove());
+            activeBalloons = [];
+            globosBoard.innerHTML = '';
+        }
+
+        function updateGlobosLives() {
+            const hearts = globosLivesDisplay.querySelectorAll('i');
+            hearts.forEach((h, index) => {
+                if (index < globosLives) {
+                    h.className = 'fa-solid fa-heart';
+                } else {
+                    h.className = 'fa-solid fa-heart lost';
+                }
+            });
+        }
+
+        function spawnBalloonLoop() {
+            if (!globosGameActive) return;
+            
+            spawnBalloon();
+            
+            // Dificultad incremental: se reduce el tiempo de spawn progresivamente
+            const delay = Math.max(450, 1100 - globosScore * 10);
+            globosTimer = setTimeout(spawnBalloonLoop, delay);
+        }
+
+        function spawnBalloon() {
+            const balloonId = `balloon-${balloonCounter++}`;
+            const element = document.createElement('div');
+            element.className = 'balloon';
+            element.id = balloonId;
+
+            // Cadena del globo
+            const string = document.createElement('div');
+            string.className = 'balloon-string';
+            element.appendChild(string);
+
+            // Posición X aleatoria
+            const size = 50;
+            const boardWidth = globosBoard.clientWidth;
+            const posX = Math.floor(Math.random() * (boardWidth - size - 10)) + 5;
+            element.style.left = `${posX}px`;
+            
+            // Posición Y inicial (debajo del tablero)
+            let posY = globosBoard.clientHeight;
+            element.style.top = `${posY}px`;
+
+            // Color aleatorio
+            const colors = ['var(--cyan)', 'var(--pink)', 'var(--primary)', 'var(--green)', 'var(--yellow)', '#ff9f1c'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            element.style.color = randomColor;
+            element.style.backgroundColor = randomColor;
+            element.style.boxShadow = `0 4px 15px rgba(0,0,0,0.3), 0 0 12px ${randomColor}`;
+
+            // Velocidad aleatoria (sube más rápido con el puntaje)
+            const baseSpeed = Math.random() * 2 + 1.5; // velocidad base en píxeles por frame
+            const speed = baseSpeed + (globosScore * 0.05);
+
+            element.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                popBalloon(balloonId, e);
+            });
+
+            globosBoard.appendChild(element);
+            
+            activeBalloons.push({
+                id: balloonId,
+                element: element,
+                x: posX,
+                y: posY,
+                speed: speed,
+                color: randomColor
+            });
+        }
+
+        function animateBalloons() {
+            if (!globosGameActive) return;
+
+            const boardHeight = globosBoard.clientHeight;
+
+            for (let i = activeBalloons.length - 1; i >= 0; i--) {
+                const b = activeBalloons[i];
+                b.y -= b.speed;
+                b.element.style.top = `${b.y}px`;
+
+                // Si se sale por arriba
+                if (b.y < -80) {
+                    b.element.remove();
+                    activeBalloons.splice(i, 1);
+                    handleBalloonEscape();
+                }
+            }
+
+            if (globosGameActive) {
+                requestAnimationFrame(animateBalloons);
+            }
+        }
+
+        function popBalloon(id, event) {
+            const index = activeBalloons.findIndex(b => b.id === id);
+            if (index === -1) return;
+
+            const b = activeBalloons[index];
+            const rect = globosBoard.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            globosScore += 10;
+            globosScoreDisplay.textContent = globosScore;
+
+            createExplosion(event.clientX, event.clientY, b.color);
+            spawnFloatingText(globosBoard, '+10', clickX, clickY, b.color);
+            Sound.playPop();
+
+            b.element.remove();
+            activeBalloons.splice(index, 1);
+        }
+
+        function handleBalloonEscape() {
+            globosLives--;
+            updateGlobosLives();
+            Sound.playMiss();
+
+            // Destello rojo rápido del tablero
+            globosBoard.style.borderColor = 'var(--red)';
+            setTimeout(() => globosBoard.style.borderColor = 'rgba(255,255,255,0.05)', 200);
+
+            if (globosLives <= 0) {
+                finishGlobosGame();
+            }
+        }
+
+        function finishGlobosGame() {
+            stopGlobosGame();
+            const isNewRecord = checkRecord('globos', globosScore);
+
+            let rank = '';
+            if (globosScore >= 250) rank = 'Rey del Aire (Ninja de Clic)';
+            else if (globosScore >= 150) rank = 'Defensor de Alturas';
+            else if (globosScore >= 70) rank = 'Coordinador Estándar';
+            else rank = 'Dedos Lentificados';
+
+            document.getElementById('result-title').textContent = isNewRecord ? '¡NUEVO RÉCORD EN GLOBOS!' : 'Partida Terminada';
+            document.getElementById('result-desc').textContent = 'Tu velocidad de coordinación ojo-mano ha sido calculada.';
+            document.getElementById('result-badge').textContent = rank;
+
+            const statsContainer = document.getElementById('results-stats-container');
+            statsContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="label">Puntuación Final</div>
+                    <div class="val" style="color: var(--pink)">${globosScore} pts</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Globos Reventados</div>
+                    <div class="val">${globosScore / 10}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Vidas Restantes</div>
+                    <div class="val">0</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Récord en Globos</div>
+                    <div class="val">${records.globos} pts</div>
+                </div>
+            `;
+
+            showView('results');
+        }
+
+
+        // ==========================================
+        // 4. LÓGICA: 🟥 ELIGE EL COLOR CORRECTO (STROOP TEST)
+        // ==========================================
+        let stroopTimerInterval;
+        let stroopTimeLeft = 15.0;
+        let stroopScore = 0;
+        let stroopActive = false;
+        let stroopCorrectColorHex = '';
+        
+        const stroopTimerVal = document.getElementById('stroop-timer');
+        const stroopScoreVal = document.getElementById('stroop-score');
+        const stroopWordDisplay = document.getElementById('stroop-word-display');
+        const stroopOptionsGrid = document.getElementById('stroop-options-grid');
+
+        const COLOR_DATA = [
+            { name: 'ROJO', hex: '#ff0055', varName: 'var(--red)' },
+            { name: 'AZUL', hex: '#00a2ff', varName: 'var(--cyan)' },
+            { name: 'VERDE', hex: '#00ff66', varName: 'var(--green)' },
+            { name: 'AMARILLO', hex: '#ffd000', varName: 'var(--yellow)' },
+            { name: 'ROSA', hex: '#f15bb5', varName: 'var(--pink)' }
+        ];
+
+        function startStroopGame() {
+            stroopScore = 0;
+            stroopTimeLeft = 15.0;
+            stroopActive = true;
+            
+            stroopScoreVal.textContent = '0';
+            stroopTimerVal.textContent = '15.0';
+
+            nextStroopRound();
+
+            // Temporizador de 15 segundos
+            const tickRate = 100;
+            const startTime = performance.now();
+
+            stroopTimerInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                stroopTimeLeft = Math.max(0, 15.0 - elapsed);
+                stroopTimerVal.textContent = stroopTimeLeft.toFixed(1);
+
+                if (stroopTimeLeft <= 0) {
+                    finishStroopGame();
+                }
+            }, tickRate);
+        }
+
+        function stopStroopGame() {
+            clearInterval(stroopTimerInterval);
+            stroopActive = false;
+        }
+
+        function nextStroopRound() {
+            if (!stroopActive) return;
+
+            // Elegir palabra aleatoria
+            const wordObj = COLOR_DATA[Math.floor(Math.random() * COLOR_DATA.length)];
+            // Elegir color de fuente aleatorio (puede o no coincidir con el significado de la palabra)
+            const colorObj = COLOR_DATA[Math.floor(Math.random() * COLOR_DATA.length)];
+
+            stroopWordDisplay.textContent = wordObj.name;
+            stroopWordDisplay.style.color = colorObj.hex;
+            stroopCorrectColorHex = colorObj.hex;
+
+            // Escalar de forma jugosa la palabra
+            stroopWordDisplay.style.transform = 'scale(0.8)';
+            setTimeout(() => stroopWordDisplay.style.transform = 'scale(1)', 50);
+
+            // Generar botones de opciones desordenados
+            const shuffledOptions = [...COLOR_DATA].sort(() => Math.random() - 0.5);
+            stroopOptionsGrid.innerHTML = '';
+            
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'stroop-btn';
+                btn.textContent = opt.name;
+                btn.style.boxShadow = `inset 0 0 5px rgba(255,255,255,0.02), 0 0 2px ${opt.hex}`;
+                btn.style.borderColor = `${opt.hex}22`;
+                
+                btn.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    handleStroopAnswer(opt.hex, e);
+                });
+                
+                stroopOptionsGrid.appendChild(btn);
+            });
+        }
+
+        function handleStroopAnswer(selectedHex, event) {
+            if (!stroopActive) return;
+
+            const rect = event.target.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            if (selectedHex === stroopCorrectColorHex) {
+                // CORRECTO
+                stroopScore += 10;
+                stroopScoreVal.textContent = stroopScore;
+                Sound.playClick();
+                
+                createExplosion(event.clientX, event.clientY, selectedHex);
+                spawnFloatingText(event.target, '+10', clickX, clickY, selectedHex);
+                
+                nextStroopRound();
+            } else {
+                // FALLO (Descuenta 5 puntos)
+                stroopScore = Math.max(0, stroopScore - 5);
+                stroopScoreVal.textContent = stroopScore;
+                Sound.playMiss();
+                
+                spawnFloatingText(event.target, '-5', clickX, clickY, 'var(--red)');
+                
+                // Animación de rebote de error
+                stroopWordDisplay.style.transform = 'translateX(-10px)';
+                setTimeout(() => stroopWordDisplay.style.transform = 'translateX(10px)', 80);
+                setTimeout(() => stroopWordDisplay.style.transform = 'translateX(0)', 160);
+            }
+        }
+
+        function finishStroopGame() {
+            stopStroopGame();
+            const isNewRecord = checkRecord('stroop', stroopScore);
+
+            let rank = '';
+            if (stroopScore >= 180) rank = 'Atención Láser (Mente Clara)';
+            else if (stroopScore >= 120) rank = 'Enfoque Sólido';
+            else if (stroopScore >= 70) rank = 'Mente Distraída';
+            else rank = 'Desorden Cognitivo';
+
+            document.getElementById('result-title').textContent = isNewRecord ? '¡NUEVO RÉCORD DE ATENCIÓN!' : 'Prueba Concluida';
+            document.getElementById('result-desc').textContent = 'Tu velocidad de procesamiento mental Stroop ha sido registrada.';
+            document.getElementById('result-badge').textContent = rank;
+
+            const statsContainer = document.getElementById('results-stats-container');
+            statsContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="label">Puntuación Final</div>
+                    <div class="val" style="color: var(--yellow)">${stroopScore} pts</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Respuestas Correctas</div>
+                    <div class="val">${Math.floor(stroopScore / 10)}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Tiempo Límite</div>
+                    <div class="val">15.0 s</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Récord Stroop</div>
+                    <div class="val">${records.stroop} pts</div>
+                </div>
+            `;
+
+            showView('results');
+        }
+
+
+        // ==========================================
+        // 5. LÓGICA: 🧠 MEMORIA (SIMON SAYS)
+        // ==========================================
+        let simonSequence = [];
+        let playerSequence = [];
+        let simonLevel = 0;
+        let simonActive = false;
+        let simonPlaybackActive = false;
+        
+        const simonStatusText = document.getElementById('simon-status');
+        const simonLevelVal = document.getElementById('memoria-level');
+        const simonPads = [
+            document.getElementById('simon-pad-0'),
+            document.getElementById('simon-pad-1'),
+            document.getElementById('simon-pad-2'),
+            document.getElementById('simon-pad-3')
+        ];
+
+        // Tonos para cada panel: Do, Re, Mi, Sol
+        const simonNotes = [261.63, 293.66, 329.63, 392.00];
+
+        function startMemoriaGame() {
+            simonSequence = [];
+            playerSequence = [];
+            simonLevel = 1;
+            simonActive = true;
+            simonPlaybackActive = false;
+            
+            simonLevelVal.textContent = '1';
+            simonStatusText.textContent = '¡PRESTA ATENCIÓN!';
+            
+            // Asignar listeners a los pads
+            simonPads.forEach(pad => {
+                pad.addEventListener('pointerdown', handleSimonPadClick);
+            });
+
+            // Iniciar primera secuencia
+            setTimeout(addToSimonSequence, 1000);
+        }
+
+        function stopMemoriaGame() {
+            simonActive = false;
+            simonPlaybackActive = false;
+            simonPads.forEach(pad => {
+                pad.removeEventListener('pointerdown', handleSimonPadClick);
+                pad.classList.remove('active');
+            });
+        }
+
+        function addToSimonSequence() {
+            if (!simonActive) return;
+            
+            playerSequence = [];
+            // Añadir panel aleatorio
+            simonSequence.push(Math.floor(Math.random() * 4));
+            
+            playSimonSequence();
+        }
+
+        function playSimonSequence() {
+            simonPlaybackActive = true;
+            simonStatusText.textContent = '¡PRESTA ATENCIÓN!';
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (!simonActive) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                flashSimonPad(simonSequence[i]);
+                i++;
+                
+                if (i >= simonSequence.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        simonPlaybackActive = false;
+                        simonStatusText.textContent = '¡TU TURNO! REPITE';
+                    }, 500);
+                }
+            }, 600);
+        }
+
+        function flashSimonPad(index) {
+            const pad = simonPads[index];
+            pad.classList.add('active');
+            Sound.playTone(simonNotes[index], 'sine', 0.25, 0.15);
+            
+            setTimeout(() => {
+                pad.classList.remove('active');
+            }, 300);
+        }
+
+        function handleSimonPadClick(e) {
+            e.stopPropagation();
+            if (!simonActive || simonPlaybackActive) return;
+
+            const padIndex = parseInt(this.getAttribute('data-index'));
+            flashSimonPad(padIndex);
+
+            // Explosión pequeña
+            const rect = this.getBoundingClientRect();
+            createExplosion(e.clientX, e.clientY, getComputedStyle(this).backgroundColor);
+
+            playerSequence.push(padIndex);
+
+            // Verificar si el último elemento ingresado es correcto
+            const currentStep = playerSequence.length - 1;
+            if (playerSequence[currentStep] !== simonSequence[currentStep]) {
+                // SE EQUIVOCÓ
+                handleSimonError();
+            } else if (playerSequence.length === simonSequence.length) {
+                // SECUENCIA COMPLETADA CORRECTAMENTE
+                simonLevel++;
+                simonLevelVal.textContent = simonLevel;
+                simonPlaybackActive = true; // Bloquear interacción temporalmente
+                
+                simonStatusText.textContent = '¡CORRECTO!';
+                Sound.playSuccess();
+
+                setTimeout(addToSimonSequence, 1200);
+            }
+        }
+
+        function handleSimonError() {
+            stopMemoriaGame();
+            Sound.playMiss();
+            simonStatusText.textContent = '¡ERROR!';
+
+            setTimeout(() => {
+                finishSimonGame();
+            }, 1000);
+        }
+
+        function finishSimonGame() {
+            const finalScore = simonLevel - 1;
+            const isNewRecord = checkRecord('memoria', finalScore);
+
+            let rank = '';
+            if (finalScore >= 12) rank = 'Memoria Eidética (Supercerebro)';
+            else if (finalScore >= 7) rank = 'Mente Concentrada';
+            else if (finalScore >= 3) rank = 'Memoria Estándar';
+            else rank = 'Olvidadizo Fugaz';
+
+            document.getElementById('result-title').textContent = isNewRecord ? '¡NUEVO RÉCORD DE MEMORIA!' : 'Prueba Terminada';
+            document.getElementById('result-desc').textContent = 'Tu capacidad de retención de patrones secuenciales.';
+            document.getElementById('result-badge').textContent = rank;
+
+            const statsContainer = document.getElementById('results-stats-container');
+            statsContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="label">Nivel Máximo</div>
+                    <div class="val" style="color: var(--cyan)">Nivel ${simonLevel}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Secuencias Memorizadas</div>
+                    <div class="val">${finalScore}</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Tipo de Juego</div>
+                    <div class="val">Simon Says</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Récord de Secuencia</div>
+                    <div class="val">${records.memoria} niv</div>
+                </div>
+            `;
+
+            showView('results');
+        }
+
+
+        // ==========================================
+        // 6. LÓGICA: 🌸 JARDÍN ZEN (RELAJANTE)
+        // ==========================================
+        const plotStates = Array(6).fill(0); // 0: Tierra, 1: Semilla, 2: Tallo, 3: Capullo, 4: Flor
+        const plotFlowers = Array(6).fill(0); // Índice de flor aleatoria (0-5)
+        const flowerIcons = ['🌸', '🌻', '🌺', '🌹', '🌷', '🌼'];
+        const flowerNames = ['Cerezo', 'Girasol', 'Hibisco', 'Rosa', 'Tulipán', 'Margarita'];
+        const stateLabels = ['Tierra Seca', 'Semilla Sembrada', 'Brote Verde', 'Capullo Creciendo', 'Flor Madura'];
+
+        function initJardinGame() {
+            const grid = document.getElementById('jardin-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 6; i++) {
+                const plot = document.createElement('div');
+                plot.className = 'jardin-plot';
+                plot.setAttribute('data-index', i);
+                
+                const graphic = document.createElement('div');
+                graphic.className = 'plot-graphic';
+                graphic.id = `plot-graphic-${i}`;
+                
+                const label = document.createElement('div');
+                label.className = 'plot-label';
+                label.id = `plot-label-${i}`;
+
+                plot.appendChild(graphic);
+                plot.appendChild(label);
+                
+                plot.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    clickPlot(i, e);
+                });
+
+                grid.appendChild(plot);
+                updatePlotVisual(i);
+            }
+        }
+
+        function clickPlot(index, event) {
+            const plotEl = event.currentTarget;
+            const currentState = plotStates[index];
+            const rect = plotEl.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            if (currentState === 0) {
+                // Sembrar semilla
+                plotStates[index] = 1;
+                plotFlowers[index] = Math.floor(Math.random() * flowerIcons.length);
+                Sound.playHarp(index);
+                spawnFloatingText(plotEl, '🌱 Semilla', clickX, clickY, '#8b5a2b');
+                createExplosion(event.clientX, event.clientY, '#8b5a2b');
+            } else if (currentState === 1) {
+                // Regar semilla -> Brote
+                plotStates[index] = 2;
+                Sound.playHarp(index + 1);
+                spawnWaterDrops(plotEl, clickX, clickY);
+                spawnFloatingText(plotEl, '💧 Regar', clickX, clickY, '#00d2ff');
+            } else if (currentState === 2) {
+                // Brote -> Capullo
+                plotStates[index] = 3;
+                Sound.playHarp(index + 2);
+                spawnWaterDrops(plotEl, clickX, clickY);
+                spawnFloatingText(plotEl, '✨ Crecer', clickX, clickY, '#39ff14');
+                createExplosion(event.clientX, event.clientY, 'var(--green)');
+            } else if (currentState === 3) {
+                // Capullo -> Flor
+                plotStates[index] = 4;
+                Sound.playSuccess();
+                spawnFloatingText(plotEl, `🌸 ¡Florece!`, clickX, clickY, 'var(--pink)');
+                createExplosion(event.clientX, event.clientY, 'var(--pink)');
+                spawnButterfly(plotEl);
+            } else if (currentState === 4) {
+                // Flor madura -> Música y Mariposas
+                Sound.playHarp(index + 3);
+                spawnFloatingText(plotEl, '🎵 Melodía', clickX, clickY, 'var(--cyan)');
+                createExplosion(event.clientX, event.clientY, 'var(--cyan)');
+                
+                // 40% de probabilidad de generar mariposa extra al interactuar
+                if (Math.random() < 0.40) {
+                    spawnButterfly(plotEl);
+                }
+            }
+
+            updatePlotVisual(index);
+        }
+
+        function spawnWaterDrops(plotEl, x, y) {
+            for (let i = 0; i < 3; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'water-drop';
+                drop.style.left = `${x + (Math.random() * 20 - 10)}px`;
+                drop.style.top = `${y}px`;
+                plotEl.appendChild(drop);
+                setTimeout(() => drop.remove(), 400);
+            }
+        }
+
+        function spawnButterfly(plotEl) {
+            const butterfly = document.createElement('div');
+            butterfly.className = 'butterfly';
+            butterfly.innerHTML = '🦋';
+            
+            // Posición X inicial aleatoria
+            const startX = Math.random() * 80 + 10;
+            butterfly.style.left = `${startX}px`;
+            butterfly.style.top = `60px`;
+            
+            // Valores de oscilación horizontal aleatorios para la animación CSS
+            const sway1 = Math.floor(Math.random() * 60 - 30) + 'px';
+            const sway2 = Math.floor(Math.random() * 80 - 40) + 'px';
+            const sway3 = Math.floor(Math.random() * 100 - 50) + 'px';
+            
+            butterfly.style.setProperty('--sway-1', sway1);
+            butterfly.style.setProperty('--sway-2', sway2);
+            butterfly.style.setProperty('--sway-3', sway3);
+
+            plotEl.appendChild(butterfly);
+            setTimeout(() => butterfly.remove(), 3000);
+        }
+
+        function updatePlotVisual(index) {
+            const graphic = document.getElementById(`plot-graphic-${index}`);
+            const label = document.getElementById(`plot-label-${index}`);
+            const state = plotStates[index];
+
+            if (state === 0) {
+                graphic.textContent = '🟤';
+                label.textContent = stateLabels[0];
+            } else if (state === 1) {
+                graphic.textContent = '🟤🌱';
+                label.textContent = stateLabels[1];
+            } else if (state === 2) {
+                graphic.textContent = '🌱';
+                label.textContent = stateLabels[2];
+            } else if (state === 3) {
+                graphic.textContent = '🌿';
+                label.textContent = stateLabels[3];
+            } else if (state === 4) {
+                const flowerIndex = plotFlowers[index];
+                graphic.textContent = flowerIcons[flowerIndex];
+                label.textContent = flowerNames[flowerIndex];
+                graphic.style.filter = 'drop-shadow(0 0 10px rgba(255,255,255,0.4))';
+            }
+        }
+
+        function resetJardin() {
+            Sound.playMiss();
+            for (let i = 0; i < 6; i++) {
+                plotStates[i] = 0;
+                plotFlowers[i] = 0;
+                updatePlotVisual(i);
+            }
+        }
+    </script>
+</body>
+
+</html>
